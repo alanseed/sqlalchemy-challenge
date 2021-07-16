@@ -19,8 +19,8 @@ def home():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/start<br/>"
-        f"/api/v1.0/start/end"
+        f"/api/v1.0/<'start_date'> <br>"
+        f"/api/v1.0/<'start_date'>/<'end_date'>"
     )
 
 #assume that we need to return the last year of data from the rain gauge that has the most data 
@@ -156,6 +156,29 @@ def tobs():
     results_list.append(stn_list)
     results_list.append(tobs_list)
     return jsonify(results_list)
+
+@app.route("/api/v1.0/<start_date>")
+def get_from_date(start_date):
+    #set up the data base 
+    engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    Measurement = Base.classes.measurement 
+
+    session = Session(engine)
+    min_temp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start_date).all()
+    max_temp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start_date).all()
+    mean_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start_date).all()
+    session.close()
+
+    results_dict = {"min_temp":min_temp,"max_temp":max_temp, "mean_temp":mean_temp}
+    return jsonify(results_dict)
+
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def get_tobs(start_date_str, end_date_str):
+
+    return
+
 
 if __name__ == '__main__':
     app.run(debug=True)
