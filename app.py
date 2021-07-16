@@ -31,6 +31,7 @@ def precipitation():
     Base = automap_base()
     Base.prepare(engine, reflect=True)
     Measurement = Base.classes.measurement 
+    Station = Base.classes.station
     session = Session(engine)
 
     # Find the start of the last year of data 
@@ -39,10 +40,12 @@ def precipitation():
     start_date = end_date - dt.timedelta(days=365) 
     start_date_str = start_date.strftime("%Y-%m-%d") 
     
-    # Get the data 
-    max_station = "USC00519397"
+    # Find the station with the most observations 
+    number_days = session.query(Measurement.station, func.count(Measurement.prcp)).group_by(Measurement.station).order_by(func.count(Measurement.prcp).desc()).all()
+    max_station = number_days[0][0]
+
+    # Get the prcp data for this station 
     results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date > start_date_str, Measurement.station == max_station).all()
-    session.close()
     
     # Append the results to a list of dictionaries 
     prcp_list = []
@@ -52,7 +55,27 @@ def precipitation():
         t_dict["prcp"] = prcp
         prcp_list.append(t_dict)
 
-    return jsonify(prcp_list)
+    # Get the metadata for this station  
+    stn_results = session.query(Station.station, Station.name, Station.latitude, Station.longitude, Station.elevation ).filter(Station.station == max_station).all()
+    session.close()
+
+    # Append the results to a list of dictionaries 
+    stn_list = []
+    for res in stn_results:
+        t_dict = {}
+        t_dict["station"] = res.station
+        t_dict["name"] = res.name
+        t_dict["latitude"] = res.latitude
+        t_dict["longitude"] = res.longitude
+        t_dict["elevation"] = res.elevation
+        t_dict["variable"] = "Daily rainfall accumulation (Inch)"
+        stn_list.append(t_dict)
+
+    # make a list of lists and return 
+    results_list = []
+    results_list.append(stn_list)
+    results_list.append(prcp_list)
+    return jsonify(results_list)
 
 @app.route("/api/v1.0/station")
 def station():
@@ -76,9 +99,63 @@ def station():
         t_dict["latitude"] = res.latitude
         t_dict["longitude"] = res.longitude
         t_dict["elevation"] = res.elevation
+
         stn_list.append(t_dict)
     
     return jsonify(stn_list)
+
+@app.route("/api/v1.0/tobs")
+def tobs():
+    #set up the data base 
+    engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    Measurement = Base.classes.measurement 
+    Station = Base.classes.station
+    session = Session(engine)
+
+    # Find the start of the last year of data 
+    end_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
+    end_date = dt.date(*map(int, end_date_str[0].split('-')))
+    start_date = end_date - dt.timedelta(days=365) 
+    start_date_str = start_date.strftime("%Y-%m-%d") 
+    
+    # Find the station with the most observations 
+    number_days = session.query(Measurement.station, func.count(Measurement.tobs)).group_by(Measurement.station).order_by(func.count(Measurement.tobs).desc()).all()
+    max_station = number_days[0][0]
+    
+    # Get the data for this station 
+    results = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date > start_date_str, Measurement.station == max_station).all()
+   
+    # Append the results to a list of dictionaries 
+    tobs_list = []
+    for date, tobs in results:
+        t_dict = {}
+        t_dict["date"] = date
+        t_dict["tobs"] = tobs
+        tobs_list.append(t_dict)
+
+    # Get the metadata for this station  
+    stn_results = session.query(Station.station, Station.name, Station.latitude, Station.longitude, Station.elevation ).filter(Station.station == max_station).all()
+    session.close()
+
+    # Append the results to a list of dictionaries 
+    stn_list = []
+    for res in stn_results:
+        t_dict = {}
+        t_dict["station"] = res.station
+        t_dict["name"] = res.name
+        t_dict["latitude"] = res.latitude
+        t_dict["longitude"] = res.longitude
+        t_dict["elevation"] = res.elevation
+        t_dict["variable"] = "Daily max temp (F)"
+        stn_list.append(t_dict)
+
+    # make a list of lists and return 
+    results_list = []
+    results_list.append(stn_list)
+    results_list.append(tobs_list)
+    return jsonify(results_list)
 
 if __name__ == '__main__':
     app.run(debug=True)
