@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import func 
 from sqlalchemy import inspect 
 
-from flask import Flask, jsonify
+from flask import Flask, json, jsonify
 
 app = Flask(__name__)
 @app.route("/")
@@ -159,12 +159,20 @@ def tobs():
 
 @app.route("/api/v1.0/<start_date>")
 def get_from_date(start_date):
+
+    # check if valid start_date string 
+    try:
+        dt.datetime.strptime(start_date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify("Incorrect date format, should be YYYY-MM-DD")
+
     #set up the data base 
     engine = create_engine("sqlite:///Resources/hawaii.sqlite")
     Base = automap_base()
     Base.prepare(engine, reflect=True)
     Measurement = Base.classes.measurement 
-
+    
+    #make the queries 
     session = Session(engine)
     min_temp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start_date).all()
     max_temp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start_date).all()
@@ -175,10 +183,36 @@ def get_from_date(start_date):
     return jsonify(results_dict)
 
 @app.route("/api/v1.0/<start_date>/<end_date>")
-def get_tobs(start_date_str, end_date_str):
+def get_from_to_date(start_date, end_date):
+    # check if valid start date string 
+    try:
+        dt.datetime.strptime(start_date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify("Incorrect start date format, should be YYYY-MM-DD")
+
+    # check if valid end date string 
+    try:
+        dt.datetime.strptime(end_date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify("Incorrect end date format, should be YYYY-MM-DD")
+
+    #set up the data base 
+    engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+    Base = automap_base()
+    Base.prepare(engine, reflect=True)
+    Measurement = Base.classes.measurement 
+    
+    #make the queries 
+    session = Session(engine)
+    min_temp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start_date,Measurement.date <= end_date).all()
+    max_temp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start_date,Measurement.date <= end_date).all()
+    mean_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start_date,Measurement.date <= end_date).all()
+    session.close()
+
+    results_dict = {"min_temp":min_temp,"max_temp":max_temp, "mean_temp":mean_temp}
+    return jsonify(results_dict)
 
     return
-
 
 if __name__ == '__main__':
     app.run(debug=True)
