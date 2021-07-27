@@ -179,7 +179,7 @@ def get_from_date(start_date):
     mean_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start_date).all()
     session.close()
 
-    results_dict = {"min_temp":min_temp,"max_temp":max_temp, "mean_temp":mean_temp}
+    results_dict = {"min_temp":min_temp[0][0],"max_temp":max_temp[0][0], "mean_temp":mean_temp[0][0]}
     return jsonify(results_dict)
 
 @app.route("/api/v1.0/<start_date>/<end_date>")
@@ -209,7 +209,7 @@ def get_from_to_date(start_date, end_date):
     mean_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start_date,Measurement.date <= end_date).all()
     session.close()
 
-    results_dict = {"min_temp":min_temp,"max_temp":max_temp, "mean_temp":mean_temp}
+    results_dict = {"min_temp":min_temp[0][0],"max_temp":max_temp[0][0], "mean_temp":mean_temp[0][0]}
     return jsonify(results_dict)
 
     return
