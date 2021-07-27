@@ -28,5 +28,8 @@ The ```Resources``` directory contains
 * ```climate.ipynb```
 A notebook to use sqlalchemy to access the sqlite data base and perform some basic data exploration  
 * ```analysis_bonus_1.ipnb```  
-A notebook with the bonus analysis to check if the mean temperature for June is statistically significantly different from the mean temperature for December
+A notebook with the bonus analysis to check if the mean temperature for June is statistically significantly different from the mean temperature for December  
+
+* ```test/test_api.py```  
+A python script to test that the responses from the API can be read properly 
 
